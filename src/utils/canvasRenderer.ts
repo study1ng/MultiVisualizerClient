@@ -2,31 +2,25 @@ export function drawSlice(
     canvas: HTMLCanvasElement,
     sliceData: Float32Array,
     width: number,
-    height: number
+    height: number,
+    wl: number,
+    ww: number
 ): void {
     const ctx = canvas.getContext("2d")!;
     canvas.width = width;
     canvas.height = height;
 
-    // 実際の値の範囲を確認
-    let min = Infinity, max = -Infinity;
-    for (const v of sliceData) {
-        if (v < min) min = v;
-        if (v > max) max = v;
-    }
-    console.log("スライスの値の範囲:", min, "〜", max); // ← 確認
+    const lo = wl - ww / 2;
+    const scale = 255 / (ww || 1);
 
     const imageData = ctx.createImageData(width, height);
+    const d = imageData.data;
     for (let i = 0; i < sliceData.length; i++) {
-        // クランプして正規化（範囲外の値を切り捨て）
-        const normalized = Math.max(0, Math.min(255,
-            ((sliceData[i] - min) / (max - min)) * 255
-        ));
+        let n = (sliceData[i] - lo) * scale;
+        n = n < 0 ? 0 : n > 255 ? 255 : n;
         const idx = i * 4;
-        imageData.data[idx]     = normalized;
-        imageData.data[idx + 1] = normalized;
-        imageData.data[idx + 2] = normalized;
-        imageData.data[idx + 3] = 255;
+        d[idx] = d[idx + 1] = d[idx + 2] = n;
+        d[idx + 3] = 255;
     }
     ctx.putImageData(imageData, 0, 0);
 }
