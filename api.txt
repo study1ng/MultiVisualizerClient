@@ -1,0 +1,24 @@
+クライアント側:
+localhost:xxxx/{view-method}/?gt={gt-filename}&fn[]={filename1}&fn[]={filename2}&... みたいなurlにGETリクエストを送る
+view-methodはax=axial,process=hd,percent=95みたいなのをpercent-encodingする.
+view-methodのキー:
+    ax: axial, coronal, saggital
+    process: hd, diff, normal
+    percent: hdの時しか使えない, hdのパーセンテージを指定
+
+サーバー側:
+エラーの場合はerror/{エラーメッセージ}みたいな感じで返す
+データをlocalhost:xxxx/{some-uuid}.zipに用意し, クライアントに送信
+{some-uuid}.zipは内部にdata.binとpayload.jsonになる
+data.binをDEFLATEで解凍するとNumpyの標準フォーマットとなる.
+    クライアント側ではnpyjsを使って標準の配列に戻せるらしい
+payload.jsonは
+{
+    "dice": 0.95,
+    "hist": {
+        0: 1,
+        1: 2,
+        ...
+    }
+}
+みたいな情報を格納する. これをいい感じに処理してダッシュボードに表示する 
