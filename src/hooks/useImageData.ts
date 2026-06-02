@@ -26,7 +26,7 @@ export function useImageData() {
         }
     };
     const currentSlice = baseParsed
-        ? getAxialSlice(baseParsed.data, baseParsed.shape, sliceIndex)
+        ? getAxialSlice(baseParsed.data, baseParsed.shape, sliceIndex, baseParsed.fortranOrder)
         : null;
 
     return { baseParsed, sliceIndex, setSliceIndex, currentSlice, load, loading };

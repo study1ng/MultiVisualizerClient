@@ -5,9 +5,9 @@ export default async function get3DImage() {
     const url_endpoint = '/api/';
 
     const view_method = encodeURIComponent("ax=axial,process=normal");
-    const base_filename = encodeURIComponent("/home/reor/MultiVisualizerClient/.teststatic/99_533_image.nii.gz");
-    const gt_filename = encodeURIComponent("/home/reor/MultiVisualizerClient/.teststatic/99_533_gt.nii.gz");
-    const filenames = [encodeURIComponent("/home/reor/MultiVisualizerClient/.teststatic/99_533_out.nii.gz")];
+    const base_filename = encodeURIComponent("/home/skitazawa/MultiVisualizerClient/.teststatic/118_6010021635259_0202_071.nii.gz");
+    const gt_filename = encodeURIComponent("/home/skitazawa/MultiVisualizerClient/.teststatic/99_533_gt.nii.gz");
+    const filenames = [encodeURIComponent("/home/skitazawa/MultiVisualizerClient/.teststatic/99_533_out.nii.gz")];
 
     const url = `${url_endpoint}${view_method}/?base=${base_filename}&gt=${gt_filename}&fn=${filenames[0]}`;
 
