@@ -1,31 +1,32 @@
-// export function ViewImage({image}) {
-//   return (
-//     <div style={{background:`url(${image})`}}></div>
-//   );
-// }
-
-import { useState } from "react";
-import get3DImage from "./api/get_3dimg.tsx"; // 関数のファイルパスに合わせて
+import ImageCanvas from "./components/ImageCanvas";
+import { useImageData } from "./hooks/useImageData";
 
 export default function ViewImage() {
-  const [loading, setLoading] = useState(false);
+    const { baseParsed, sliceIndex, setSliceIndex, currentSlice, load, loading } = useImageData();
 
-  const handleClick = async () => {
-    setLoading(true);
-    try {
-      await get3DImage();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return (
+        <div>
+            <button onClick={load} disabled={loading}>
+                {loading ? "読み込み中..." : "画像を読み込む"}
+            </button>
 
-  return (
-    <div>
-      <button onClick={handleClick} disabled={loading}>
-        {loading ? "読み込み中..." : "3D画像を取得"}
-      </button>
-    </div>
-  );
+            {baseParsed && currentSlice && (
+                <>
+                    <input
+                        type="range"
+                        min={0}
+                        max={baseParsed.shape[2] - 1}
+                        value={sliceIndex}
+                        onChange={e => setSliceIndex(Number(e.target.value))}
+                    />
+                    <p>スライス: {sliceIndex} / {baseParsed.shape[2] - 1}</p>
+                    <ImageCanvas
+                        sliceData={currentSlice}
+                        width={baseParsed.shape[0]}
+                        height={baseParsed.shape[1]}
+                    />
+                </>
+            )}
+        </div>
+    );
 }
