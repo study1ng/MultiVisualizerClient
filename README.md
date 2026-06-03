@@ -1,73 +1,123 @@
-# React + TypeScript + Vite
-# hoge Gorilla
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# CT Multi-Visualizer (Frontend)
 
-Currently, two official plugins are available:
+ブラウザ上でCT画像とセグメンテーションラベルを可視化するReactアプリケーションです。
+[MultiVisualizerServer](https://github.com/study1ng/MultiVisualizerServer) から取得した3次元CTデータと複数のラベル（GT・推論結果）を、スライス単位でインタラクティブに描画・比較できます。
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 概要
 
-## React Compiler
+バックエンドAPIに対象ファイル名を問い合わせると、サーバーがCTボリュームと各種ラベル・統計情報をZIPにまとめて返します。本フロントエンドはそれを解凍・パースし、次の2画面で表示します。
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **ビューア画面**：CTスライスにセグメンテーションラベルを重ねて描画。GT（グランドトゥルース）と複数の推論結果（fn1, fn2, …）を横並びで比較できる。
+- **ダッシュボード画面**：平均・分散・Dice Score・Hausdorff距離・ヒストグラムなどの統計情報をカードとグラフで表示。
 
-## Expanding the ESLint configuration
+キーボードの **`d`** キーで2画面を切り替えられます。
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 主な機能
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **3Dボリュームのスライス表示**：スライダーまたはマウスホイールで断面を移動。
+- **ウィンドウ処理（WL / WW）**：ウィンドウレベル・ウィンドウ幅をスライダーで調整し、コントラストをリアルタイムに変更。
+- **マルチラベルのオーバーレイ比較**：GTと複数の推論ラベルをそれぞれCTに重ね、横並びで同時表示。ラベルIDごとに色を割り当てるため、同一クラスは全パネルで同色になり差分が見やすい。
+- **スライス同期**：「スライスを同期」をONにすると、どのパネルを操作しても全パネルが同じ断面に揃う。OFFで個別操作も可能。
+- **ラベル表示のON/OFF**：CT単独表示とオーバーレイ表示を切り替え。
+- **キャンバスのリサイズ**：表示キャンバスの右辺・下辺・右下角をドラッグして拡大縮小（ピクセルは補間せず保持）。
+- **統計ダッシュボード**：数値指標はカード、分布・スコアはグラフ（recharts）で表示。
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 技術スタック
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- React + TypeScript
+- Vite（開発サーバー / ビルド）
+- MUI（UIコンポーネント）
+- Recharts（グラフ描画）
+- fflate（ZIP / zlib 解凍）
+- npyjs（NumPy `.npy` 配列のパース）
+
+## ディレクトリ構成
+
+```
+src/
+├── App.tsx / App.css
+├── main.tsx              # エントリポイント。ViewImage と Dashboard を束ね、d キーで切替
+├── env.tsx               # 既定のファイル名（base / gt / fn）をグローバルに設定
+├── ViewImage.tsx         # ビューア画面。スライダー・WL/WW・パネル並列表示
+├── api/
+│   └── get_3dimg.tsx     # サーバーへの問い合わせ、ZIP取得・解凍・キャッシュ
+├── components/
+│   ├── Dashboard.tsx     # 統計ダッシュボード（payload.json を描画）
+│   └── ImageCanvas.tsx   # Canvas描画、ホイール・リサイズ操作
+├── hooks/
+│   └── useImageData.ts   # ボリューム/ラベルの状態管理・スライス切出し・同期ロジック
+└── utils/
+    ├── canvasRenderer.ts # ピクセル値→グレースケール変換とラベルのアルファ合成
+    └── numpyParser.ts    # .npy のパースとボリューム/ラベルボリュームの構築
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## セットアップ
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 前提
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
+- Node.js（推奨 18 以上）
+- 稼働中の [MultiVisualizerServer](https://github.com/study1ng/MultiVisualizerServer)
+
+### インストールと起動
+
+```bash
+npm install
+npm run dev
+```
+
+### APIプロキシの設定
+
+本アプリは `/api/` へのリクエストでサーバーと通信します。開発サーバーからバックエンドへプロキシするため、`vite.config.ts` に以下のような設定を追加してください（サーバーのホスト・ポートは環境に合わせて変更）。
+
+```ts
+// vite.config.ts
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
       },
-      // other options...
     },
   },
-])
+});
 ```
+
+## 使い方
+
+1. ビューア画面で **「画像を読み込む」** をクリックします。
+2. ダイアログに従って `base`（CT）・`gt`（正解ラベル）・`fn`（推論結果。複数可、空入力で終了）のファイル名を入力します。空欄のままにすると `env.tsx` の既定値が使われます。
+3. CTスライスに各ラベルが重なったパネルが横並びで表示されます。
+   - **スライス移動**：各パネルのスライダー、またはキャンバス上のマウスホイール。
+   - **WL / WW**：上部のスライダーで明るさ・コントラストを調整。
+   - **ラベルを表示 / スライスを同期**：チェックボックスで切り替え。
+4. **`d`** キーで統計ダッシュボードに切り替え、各種指標を確認します。
+
+## データフロー
+
+```
+get3DImage()  ──▶  /api/.../?base=&gt=&fn=...   ──▶  UUID(JSON)
+                                                  └──▶  /api/{uuid}.zip ──▶ 解凍してキャッシュ
+                                                            │
+        ┌───────────────────────────────────────────────────┴───────────────┐
+        ▼                                                                     ▼
+  ViewImage 経路                                                       Dashboard 経路
+  base.bin / *.bin                                                     payload.json
+   └ parseNpy（zlib展開 + npyパース）                                    └ JSON.parse
+   └ buildVolume / buildLabelVolume（向き補正・min/max・ラベルID抽出）    └ カード・グラフへ変換
+   └ スライス切出し ▶ drawSlice（ウィンドウ処理 + ラベル合成）▶ Canvas
+```
+
+サーバーへのアクセスと解凍は初回のみ行われ、結果は `get_3dimg.tsx` 内でキャッシュされます。ビューアとダッシュボードは同じ解凍結果を共有します。
+
+## 既知の制約 / 今後の課題
+
+- **メモリ使用量**：ベースCTと全ラベルをボリュームとして同時に展開・保持するため、ラベル数やボリュームサイズが増えるとメモリ消費が大きくなる。スライス遅延読み込みや型の最適化（不要な再キャストの削減）が課題。
+- **データ形式の前提**：ベースCTは float64、ラベルは整数 dtype、各ラベルはベースと同一 shape であることを前提としている。
+- **断面方向**：現在は軸（axial）方向の表示のみ。冠状断・矢状断など多断面表示は今後の拡張対象。
+- **入力UI**：ファイル名指定が `prompt()` ベースのため、ファイル選択UIへの置き換え余地がある。
+
+## 関連リポジトリ
+
+- バックエンド：[study1ng/MultiVisualizerServer](https://github.com/study1ng/MultiVisualizerServer)
