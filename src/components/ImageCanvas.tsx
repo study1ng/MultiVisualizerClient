@@ -3,6 +3,7 @@ import { drawSlice } from "../utils/canvasRenderer";
 
 interface Props {
     sliceData: Float32Array;
+    labelData?: Int32Array | null;
     width: number;   // ネイティブ画素幅（例 128）
     height: number;  // ネイティブ画素高（例 112）
     wl: number;
@@ -14,7 +15,7 @@ const EDGE = 12;       // 枠と判定する縁の幅(px)
 const MIN_W = 64;      // 最小表示幅
 const MAX_W = 1000;    // 最大表示幅
 
-export default function ImageCanvas({ sliceData, width, height, wl, ww, onWheel }: Props) {
+export default function ImageCanvas({ sliceData, labelData, width, height, wl, ww, onWheel }: Props) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const aspect = width / height;
 
@@ -29,9 +30,9 @@ export default function ImageCanvas({ sliceData, width, height, wl, ww, onWheel 
     // --- 描画（従来どおり）---
     useEffect(() => {
         if (canvasRef.current) {
-            drawSlice(canvasRef.current, sliceData, width, height, wl, ww);
+            drawSlice(canvasRef.current, sliceData, width, height, wl, ww, labelData);
         }
-    }, [sliceData, width, height, wl, ww]);
+    }, [sliceData, labelData, width, height, wl, ww]);
 
     // --- ホイールでスライス移動（中央でのみ。リサイズ中は無効）---
     useEffect(() => {

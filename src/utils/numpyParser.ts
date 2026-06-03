@@ -76,11 +76,56 @@ export function buildVolume(parsed: ParsedNpy): Volume {
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 const v = src[x * st0 + y * st1 + s * st2];
-                out[base + y * width + x] = v;
+                out[base + (height - 1 - y) * width + (width - 1 - x)] = v;
                 if (v < min) min = v;
                 if (v > max) max = v;
             }
         }
     }
     return { data: out, width, height, count, min, max };
+}
+
+export interface LabelVolume {
+    data: Int32Array; // [count][height][width] のラベルID
+    width: number;
+    height: number;
+    count: number;
+    labels: number[]; // 出現する非ゼロのラベルID(昇順)
+}
+
+export function buildLabelVolume(parsed: ParsedNpy): LabelVolume {
+    const [S0, S1, S2] = parsed.shape;
+    const width = S0, height = S1, count = S2;
+
+    // npyjsが返す型付き配列をそのまま参照(dtypeに応じた正しい型)
+    const src = parsed.data as unknown as ArrayLike<number>;
+
+    let st0: number, st1: number, st2: number;
+    if (parsed.fortranOrder) {
+        st0 = 1; st1 = S0; st2 = S0 * S1;
+    } else {
+        st2 = 1; st1 = S2; st0 = S1 * S2;
+    }
+
+    const sliceSize = width * height;
+    const out = new Int32Array(count * sliceSize);
+    const labelSet = new Set<number>();
+
+    for (let s = 0; s < count; s++) {
+        const base = s * sliceSize;
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const v = src[x * st0 + y * st1 + s * st2] | 0; // 整数化
+                // ベースと同じ向き補正
+                out[base + (height - 1 - y) * width + (width - 1 - x)] = v;
+                if (v !== 0) labelSet.add(v);
+            }
+        }
+    }
+
+    return {
+        data: out,
+        width, height, count,
+        labels: [...labelSet].sort((a, b) => a - b),
+    };
 }
