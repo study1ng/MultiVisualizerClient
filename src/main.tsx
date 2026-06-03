@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.tsx'
 import ViewImage from './ViewImage.tsx'
 import get3DImage from './api/get_3dimg.tsx'
+import "./env.tsx"
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
