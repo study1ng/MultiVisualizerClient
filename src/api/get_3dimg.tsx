@@ -2,8 +2,8 @@ import { unzipSync, type Unzipped } from "fflate";
 // import npyjs from "npyjs";
 
 function promptOrDefault(message: string, fallback: string): string {
-    const value = prompt(message);
-    return value === null || value === "" ? fallback : value;
+	const value = prompt(message);
+	return value === null || value === "" ? fallback : value;
 }
 
 let _unzipped: Unzipped | null = null;
