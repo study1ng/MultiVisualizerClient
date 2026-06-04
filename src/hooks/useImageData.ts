@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import get3DImage from "../api/get_3dimg";
+import { fetchImages, type LoadRequest } from "../api/get_3dimg";
 import { parseNpy, buildVolume, buildLabelVolume } from "../utils/numpyParser";
 import type { Volume, LabelVolume } from "../utils/numpyParser";
 
@@ -10,12 +10,11 @@ export interface NamedLabel {
 
 export interface PanelSlice {
 	name: string;
-	baseSlice: Float32Array;
-	labelSlice: Int32Array;
+	baseSlice: Float32Array | null;
+	labelSlice: Int32Array | null;
 	sliceIndex: number;
 }
 
-// gt を先頭に、その他は名前順(数値込み)で並べる
 function orderLabelKeys(keys: string[]): string[] {
 	return keys.sort((a, b) => {
 		const ag = a.startsWith("gt");
@@ -34,23 +33,33 @@ export function useImageData() {
 	const [wl, setWl] = useState(0);
 	const [ww, setWw] = useState(1);
 	const [showLabel, setShowLabel] = useState(true);
-    const [labelAlpha, setLabelAlpha] = useState(0.4);
+	const [labelAlpha, setLabelAlpha] = useState(0.4);
 	const [sync, setSync] = useState(true);
 
-	const load = async () => {
+	// 寸法とスライス数は base が無ければ最初のラベルから決める
+	const dims = useMemo(() => {
+		if (volume) return { w: volume.width, h: volume.height };
+		if (labels[0]) return { w: labels[0].volume.width, h: labels[0].volume.height };
+		return null;
+	}, [volume, labels]);
+
+	const count = volume ? volume.count : labels[0]?.volume.count ?? 0;
+
+	const load = async (req: LoadRequest) => {
 		setLoading(true);
 		try {
-			const unzipped = await get3DImage();
-			const parsed = await parseNpy(unzipped["base.bin"]);
-			const vol = buildVolume(parsed);
+			const unzipped = await fetchImages(req);
+
+			// base.bin があれば CT ボリュームを構築（無ければ null）
+			const baseBin = unzipped["base.bin"];
+			const vol = baseBin ? buildVolume(await parseNpy(baseBin)) : null;
 
 			// base.bin / payload.json 以外をすべてラベルとして読み込む
 			const labelKeys = orderLabelKeys(
 				Object.keys(unzipped).filter(
-					k => k !== "base.bin" && k !== "payload.json",
+					(k) => k !== "base.bin" && k !== "payload.json",
 				),
 			);
-
 			const loadedLabels: NamedLabel[] = [];
 			for (const key of labelKeys) {
 				const p = await parseNpy(unzipped[key]);
@@ -60,47 +69,58 @@ export function useImageData() {
 				});
 			}
 
-			const mid = Math.floor(vol.count / 2);
+			const cnt = vol ? vol.count : loadedLabels[0]?.volume.count ?? 0;
+			const mid = Math.floor(cnt / 2);
+			// ラベルがあればラベル数ぶん、無く base だけなら1パネル
+			const panelCount = loadedLabels.length > 0 ? loadedLabels.length : vol ? 1 : 0;
+
 			setVolume(vol);
 			setLabels(loadedLabels);
-			setSliceIndices(loadedLabels.map(() => mid));
-			setWl((vol.min + vol.max) / 2);
-			setWw(vol.max - vol.min);
+			setSliceIndices(Array(panelCount).fill(mid));
+			if (vol) {
+				setWl((vol.min + vol.max) / 2);
+				setWw(vol.max - vol.min);
+			}
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	// 各パネル用のスライスを切り出す(同じベースCT + 各ラベル)
 	const panels = useMemo<PanelSlice[]>(() => {
-		if (!volume) return [];
-		const sliceSize = volume.width * volume.height;
-		return labels.map((lab, i) => {
-			const si = sliceIndices[i] ?? 0;
-			const baseSlice = volume.data.subarray(
-				si * sliceSize,
-				(si + 1) * sliceSize,
-			);
-			const lSize = lab.volume.width * lab.volume.height;
-			const labelSlice = lab.volume.data.subarray(
-				si * lSize,
-				(si + 1) * lSize,
-			);
-			return { name: lab.name, baseSlice, labelSlice, sliceIndex: si };
-		});
-	}, [volume, labels, sliceIndices]);
+		if (!dims) return [];
+		const sliceSize = dims.w * dims.h;
+
+		if (labels.length > 0) {
+			return labels.map((lab, i) => {
+				const si = sliceIndices[i] ?? 0;
+				const baseSlice = volume
+					? volume.data.subarray(si * sliceSize, (si + 1) * sliceSize)
+					: null; // base が無ければ黒背景にラベルだけ描画
+				const lSize = lab.volume.width * lab.volume.height;
+				const labelSlice = lab.volume.data.subarray(si * lSize, (si + 1) * lSize);
+				return { name: lab.name, baseSlice, labelSlice, sliceIndex: si };
+			});
+		}
+
+		// ラベルなし・base のみ → 1パネル
+		if (volume) {
+			const si = sliceIndices[0] ?? 0;
+			const baseSlice = volume.data.subarray(si * sliceSize, (si + 1) * sliceSize);
+			return [{ name: "base", baseSlice, labelSlice: null, sliceIndex: si }];
+		}
+		return [];
+	}, [volume, labels, sliceIndices, dims]);
 
 	const clamp = useCallback(
-		(v: number) => (volume ? Math.max(0, Math.min(volume.count - 1, v)) : 0),
-		[volume],
+		(v: number) => (count ? Math.max(0, Math.min(count - 1, v)) : 0),
+		[count],
 	);
 
-	// スライダー用(絶対値指定)
 	const setSlice = useCallback(
 		(panel: number, value: number) => {
-			setSliceIndices(prev => {
+			setSliceIndices((prev) => {
 				const c = clamp(value);
-				if (sync) return prev.map(() => c); // 同期: 全パネルを同じ値に
+				if (sync) return prev.map(() => c);
 				const next = [...prev];
 				next[panel] = c;
 				return next;
@@ -109,11 +129,10 @@ export function useImageData() {
 		[sync, clamp],
 	);
 
-	// ホイール用(相対移動)
 	const moveSlice = useCallback(
 		(panel: number, deltaY: number) => {
 			const dir = deltaY > 0 ? 1 : -1;
-			setSliceIndices(prev => {
+			setSliceIndices((prev) => {
 				if (sync) {
 					const c = clamp(prev[panel] + dir);
 					return prev.map(() => c);
@@ -130,11 +149,14 @@ export function useImageData() {
 		volume,
 		labels,
 		panels,
+		width: dims?.w,
+		height: dims?.h,
+		count,
 		loading,
 		wl, setWl,
 		ww, setWw,
 		showLabel, setShowLabel,
-        labelAlpha, setLabelAlpha,
+		labelAlpha, setLabelAlpha,
 		sync, setSync,
 		setSlice,
 		moveSlice,

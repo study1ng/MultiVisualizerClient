@@ -1,5 +1,5 @@
 import type { Unzipped } from "fflate";
-import get3DImage from "../api/get_3dimg";
+import { getCachedImages } from "../api/get_3dimg";
 import type { JSX } from "react/jsx-runtime";
 import {
 	Paper,
@@ -33,26 +33,30 @@ const TOOLTIP_STYLE = {
 	color: "var(--tooltip-text)",
 };
 
-export default function Dashboard() {
-	// Explicitly define the state type as JSX.Element | null (or React.ReactNode)
+export default function Dashboard({ active }: { active: boolean }) {
 	const [data, setData] = useState<JSX.Element | null>(null);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		get3DImage().then((unzip) => {
-			const payload = unzip["payload.json"];
-			const decoder = new TextDecoder("utf-8");
-			const decoded = decoder.decode(payload);
-			const json = JSON.parse(decoded);
-
-			// Now TypeScript knows this is valid
-			setData(_Dashboard(json));
+		const unzip = getCachedImages();
+		if (!unzip || !unzip["payload.json"]) {
+			setData(null);
 			setLoading(false);
-		});
-	}, []);
+			return;
+		}
+		const decoded = new TextDecoder("utf-8").decode(unzip["payload.json"]);
+		const json = JSON.parse(decoded);
+		setData(_Dashboard(json));
+		setLoading(false);
+	}, [active]);
 
 	if (loading) return <div>Loading...</div>;
-
+	if (!data)
+		return (
+			<Typography color="text.secondary">
+				先にビューアで画像を読み込んでください。
+			</Typography>
+		);
 	return data;
 }
 

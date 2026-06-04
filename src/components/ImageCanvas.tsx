@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { drawSlice } from "../utils/canvasRenderer";
 import { useTheme } from "@mui/material";
 interface Props {
-    sliceData: Float32Array;
+    sliceData: Float32Array | null; 
     labelData?: Int32Array | null;
     labelAlpha?: number;
     width: number;   // ネイティブ画素幅（例 128）

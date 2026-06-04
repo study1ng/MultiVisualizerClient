@@ -75,7 +75,7 @@ function RootComponent() {
 					<ViewImage />
 				</Box>
 				<Box sx={{ display: showView ? "none" : "block" }}>
-					<Dashboard />
+					<Dashboard active={!showView} />
 				</Box>
 			</Box>
 		</ThemeProvider>

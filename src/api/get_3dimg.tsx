@@ -1,59 +1,41 @@
 import { unzipSync, type Unzipped } from "fflate";
-// import npyjs from "npyjs";
 
-function promptOrDefault(message: string, fallback: string): string {
-	const value = prompt(message);
-	return value === null || value === "" ? fallback : value;
+export interface LoadRequest {
+	base?: string;
+	gt?: string;
+	fn?: string[];
 }
 
 let _unzipped: Unzipped | null = null;
-async function _get3DImage() {
-    const url_endpoint = "/api/";
 
-    const view_method = encodeURIComponent("ax=axial,process=normal");
-    const base_filename = promptOrDefault("base_filename", globalThis.base_filename);
-    const gt_filename = promptOrDefault("gt_filename", globalThis.gt_filename);
-    const filenames: string[] = [];
-    while (true) {
-        const filename = prompt("filename");
-        if (filename === null || filename === "") break;
-        filenames.push(filename);
-    }
-
-
-    if (filenames.length === 0) {
-        filenames.push(...globalThis.fn_filenames);
-    }
-
-    const query = new URLSearchParams();
-    query.set("base", base_filename);
-    query.set("gt", gt_filename);
-    for (const f of filenames) {
-        query.append("fn", f);
-    }
-    
-
-    const url = `${url_endpoint}${view_method}/?${query.toString()}`;
-
-    // UUIDを取得
-    const uuidResponse = await fetch(url);
-    const uuid = await uuidResponse.json();
-
-    // ZIPを取得
-    const zip_url = `${url_endpoint}${uuid}.zip`;
-    const zipdataResponse = await fetch(zip_url); // Response型
-    const zipdataBytes = new Uint8Array(await zipdataResponse.arrayBuffer()); // Uint8Array型
-
-    // 解凍
-    const unzipped = unzipSync(zipdataBytes);
-    _unzipped = unzipped;
+// ダッシュボード等が参照する、最後に読み込んだ結果
+export function getCachedImages(): Unzipped | null {
+	return _unzipped;
 }
 
+export async function fetchImages(req: LoadRequest): Promise<Unzipped> {
+	const base = (req.base ?? "").trim();
+	const gt = (req.gt ?? "").trim();
+	const fn = (req.fn ?? []).map((f) => f.trim()).filter(Boolean);
 
+	// すべて空欄のときのみデフォルト（env.tsx）を使う
+	const allEmpty = !base && !gt && fn.length === 0;
+	const useBase = allEmpty ? globalThis.base_filename : base;
+	const useGt = allEmpty ? globalThis.gt_filename : gt;
+	const useFn = allEmpty ? globalThis.fn_filenames : fn;
 
-export default async function get3DImage(): Promise<Unzipped> {
-    if (_unzipped == null) {
-        await _get3DImage();
-    }
-    return _unzipped!;
+	const view_method = encodeURIComponent("ax=axial,process=normal");
+	const query = new URLSearchParams();
+	if (useBase) query.set("base", useBase);
+	if (useGt) query.set("gt", useGt);
+	for (const f of useFn) query.append("fn", f);
+
+	const url = `/api/${view_method}/?${query.toString()}`;
+	const uuid = await (await fetch(url)).json();
+
+	const zipResp = await fetch(`/api/${uuid}.zip`);
+	const bytes = new Uint8Array(await zipResp.arrayBuffer());
+
+	_unzipped = unzipSync(bytes);
+	return _unzipped;
 }
