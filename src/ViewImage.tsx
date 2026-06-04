@@ -7,7 +7,20 @@ import {
 	FormControlLabel, Switch, Stack, CircularProgress,
 } from "@mui/material";
 
-const mono = { fontFamily: '"IBM Plex Mono", monospace' } as const;
+// 折り返さない等幅数字スタイル
+const readout = {
+	fontFamily: '"IBM Plex Mono", monospace',
+	fontVariantNumeric: "tabular-nums",
+	whiteSpace: "nowrap" as const,
+} as const;
+
+// WL/WW 用: 桁数が増えても短く収まる表示
+const fmtVal = (v: number) => {
+	const a = Math.abs(v);
+	if (a !== 0 && (a >= 1e5 || a < 1e-3)) return v.toExponential(2); // 例 1.23e+5
+	if (Number.isInteger(v)) return String(v);
+	return v.toFixed(2); // 例 -12.34
+};
 
 export default function ViewImage() {
 	const {
@@ -41,20 +54,20 @@ export default function ViewImage() {
 					{volume && (
 						<>
 							<Box sx={{ minWidth: 180, flex: 1 }}>
-								<Stack direction="row" justifyContent="space-between">
-									<Typography variant="overline" color="text.secondary">Window Level</Typography>
-									<Typography variant="body2" sx={mono} color="primary.light">
-										{Number(wl.toPrecision(4))}
+								<Stack direction="row" justifyContent="space-between" alignItems="baseline" spacing={1} sx={{ minWidth: 0 }}>
+									<Typography variant="overline" color="text.secondary" noWrap>Window Level</Typography>
+									<Typography variant="body2" sx={readout} color="primary.light">
+										{fmtVal(wl)}
 									</Typography>
 								</Stack>
 								<Slider min={volume.min} max={volume.max} step={step}
 									value={wl} onChange={(_, v) => setWl(v as number)} />
 							</Box>
 							<Box sx={{ minWidth: 180, flex: 1 }}>
-								<Stack direction="row" justifyContent="space-between">
-									<Typography variant="overline" color="text.secondary">Window Width</Typography>
-									<Typography variant="body2" sx={mono} color="primary.light">
-										{Number(ww.toPrecision(4))}
+								<Stack direction="row" justifyContent="space-between" alignItems="baseline" spacing={1} sx={{ minWidth: 0 }}>
+									<Typography variant="overline" color="text.secondary" noWrap>Window Width</Typography>
+									<Typography variant="body2" sx={readout} color="primary.light">
+										{fmtVal(ww)}
 									</Typography>
 								</Stack>
 								<Slider min={step} max={range} step={step}
@@ -66,9 +79,9 @@ export default function ViewImage() {
 					{(volume || hasLabels) && (
 						<>
 							<Box sx={{ minWidth: 180, flex: 1 }}>
-								<Stack direction="row" justifyContent="space-between">
-									<Typography variant="overline" color="text.secondary">ラベル不透明度</Typography>
-									<Typography variant="body2" sx={mono} color="primary.light">
+								<Stack direction="row" justifyContent="space-between" alignItems="baseline" spacing={1} sx={{ minWidth: 0 }}>
+									<Typography variant="overline" color="text.secondary" noWrap>ラベル不透明度</Typography>
+									<Typography variant="body2" sx={readout} color="primary.light">
 										{Math.round(labelAlpha * 100)}%
 									</Typography>
 								</Stack>
@@ -100,7 +113,7 @@ export default function ViewImage() {
 										color={isGt ? "primary" : "default"}
 										variant={isGt ? "filled" : "outlined"}
 										sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 500 }} />
-									<Typography variant="body2" sx={mono} color="text.secondary">
+									<Typography variant="body2" sx={readout} color="text.secondary">
 										{p.sliceIndex} / {count - 1}
 									</Typography>
 								</Stack>
