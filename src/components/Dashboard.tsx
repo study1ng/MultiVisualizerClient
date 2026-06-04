@@ -23,6 +23,16 @@ import {
 } from "recharts";
 import { useEffect, useState } from "react";
 
+const CHART_FILL = "var(--chart-fill)";
+const GRID_STROKE = "var(--grid-stroke)";
+const AXIS_TICK = { fill: "var(--axis-tick)", fontSize: 12 };
+const TOOLTIP_STYLE = {
+	backgroundColor: "var(--tooltip-bg)",
+	border: "1px solid var(--tooltip-border)",
+	borderRadius: 8,
+	color: "var(--tooltip-text)",
+};
+
 export default function Dashboard() {
 	// Explicitly define the state type as JSX.Element | null (or React.ReactNode)
 	const [data, setData] = useState<JSX.Element | null>(null);
@@ -55,6 +65,7 @@ function _Dashboard(json: any): JSX.Element {
 
 	return (
 		<Box sx={{ display: "flex", flexDirection: "column", gap: 3, p: 2 }}>
+			<Typography variant="h5" sx={{ mb: 1 }}>統計ダッシュボード</Typography>
 			{/* 2. numberタイプの項目をひとつのFlexコンテナに集約して配置 */}
 			{numberEntries.length > 0 && (
 				<Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
@@ -164,12 +175,20 @@ function parse_scatter_graph(v: any): JSX.Element {
 		<Box sx={{ width: "100%", height: 300 }}>
 			<ResponsiveContainer>
 				<BarChart data={chartData}>
-					<CartesianGrid strokeDasharray="3 3" />
-					{/* X軸の目盛りにもフォーマットを適用 */}
-					<XAxis dataKey="label" tickFormatter={formatScientific} />
-					<YAxis tickFormatter={formatScientific} />
-					<Tooltip formatter={(value: any) => formatScientific(value)} />
-					<Scatter dataKey="value" fill="#1976d2" />
+					<CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+					<XAxis
+						dataKey="label"
+						tickFormatter={formatScientific}
+						tick={AXIS_TICK}
+						stroke={GRID_STROKE}
+					/>
+					<YAxis tickFormatter={formatScientific} tick={AXIS_TICK} stroke={GRID_STROKE} />
+					<Tooltip
+						formatter={(value: any) => formatScientific(value)}
+						contentStyle={TOOLTIP_STYLE}
+						cursor={{ fill: "rgba(255,255,255,0.04)" }}
+					/>
+					<Scatter dataKey="value" fill={CHART_FILL} />
 				</BarChart>
 			</ResponsiveContainer>
 		</Box>
@@ -209,11 +228,20 @@ function parse_continuous_graph(v: any): JSX.Element {
 		<Box sx={{ width: "100%", height: 300 }}>
 			<ResponsiveContainer>
 				<BarChart data={chartData}>
-					<CartesianGrid strokeDasharray="3 3" />
-					<XAxis dataKey="name" tickFormatter={formatScientific} />
-					<YAxis tickFormatter={formatScientific} />
-					<Tooltip formatter={(value: any) => formatScientific(value)} />
-					<Bar dataKey="value" fill="#1976d2" />
+					<CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+					<XAxis
+						dataKey="name"
+						tickFormatter={formatScientific}
+						tick={AXIS_TICK}
+						stroke={GRID_STROKE}
+					/>
+					<YAxis tickFormatter={formatScientific} tick={AXIS_TICK} stroke={GRID_STROKE} />
+					<Tooltip
+						formatter={(value: any) => formatScientific(value)}
+						contentStyle={TOOLTIP_STYLE}
+						cursor={{ fill: "rgba(255,255,255,0.04)" }}
+					/>
+					<Bar dataKey="value" fill={CHART_FILL} radius={[3, 3, 0, 0]} />
 				</BarChart>
 			</ResponsiveContainer>
 		</Box>

@@ -34,6 +34,7 @@ export function useImageData() {
 	const [wl, setWl] = useState(0);
 	const [ww, setWw] = useState(1);
 	const [showLabel, setShowLabel] = useState(true);
+    const [labelAlpha, setLabelAlpha] = useState(0.4);
 	const [sync, setSync] = useState(true);
 
 	const load = async () => {
@@ -133,6 +134,7 @@ export function useImageData() {
 		wl, setWl,
 		ww, setWw,
 		showLabel, setShowLabel,
+        labelAlpha, setLabelAlpha,
 		sync, setSync,
 		setSlice,
 		moveSlice,
