@@ -48,7 +48,7 @@ function buildBody(mode: ThemeMode, t: Tokens) {
 function buildTheme(mode: ThemeMode): Theme {
 	const t = tokens[mode];
 	const isDark = mode === "dark";
-	const glow = isDark; // 発光はダークのみ
+	const glow = isDark; // glow only in dark mode
 
 	return createTheme({
 		palette: {
@@ -79,10 +79,19 @@ function buildTheme(mode: ThemeMode): Theme {
 			},
 			MuiButton: {
 				styleOverrides: {
-					containedPrimary: {
-						color: isDark ? "#06121a" : "#ffffff",
-						boxShadow: glow ? `0 0 18px ${t.primary}66` : "none",
-						"&:hover": { boxShadow: glow ? `0 0 28px ${t.primary}99` : undefined },
+					root: {
+						// Combined variant+color classes (e.g. containedPrimary) were
+						// removed in MUI v9; target them via the variants array instead.
+						variants: [
+							{
+								props: { variant: "contained", color: "primary" },
+								style: {
+									color: isDark ? "#06121a" : "#ffffff",
+									boxShadow: glow ? `0 0 18px ${t.primary}66` : "none",
+									"&:hover": { boxShadow: glow ? `0 0 28px ${t.primary}99` : undefined },
+								},
+							},
+						],
 					},
 				},
 			},
