@@ -1,73 +1,167 @@
-# React + TypeScript + Vite
-# hoge Gorilla
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# CT Multi-Visualizer (Frontend)
 
-Currently, two official plugins are available:
+ブラウザ上でCT画像とセグメンテーションラベルを可視化するReactアプリケーションです。
+[MultiVisualizerServer](https://github.com/study1ng/MultiVisualizerServer) から取得した3次元CT像と複数のラベル（Ground Truth/推論結果）を、スライス単位でインタラクティブに描画・比較できます。
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 概要
 
-## React Compiler
+バックエンドAPIに対象ファイル名を問い合わせると、サーバーがCTボリュームと各種ラベル・統計情報をZIPにまとめて返します。本フロントエンドはそれを解凍・パースし、次の2画面で表示します。
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **ビューア画面**：CTスライスにセグメンテーションラベルを重ねて描画。GTと複数の推論結果（fn1, fn2, …）を横並びで比較できる。
+- **ダッシュボード画面**：平均・分散・Dice Score・Hausdorff距離・ヒストグラムなどの統計情報をカードとグラフで表示。
 
-## Expanding the ESLint configuration
+ヘッダー右上のトグルで2画面を切り替えられるほか、キーボードの **`d`** キーでも切り替えられます。同じく右上のトグルで **ライト / ダークテーマ** を切り替えられます（選択はブラウザに保存されます）。
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 主な機能
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **3Dボリュームのスライス表示**：スライダーまたはマウスホイールで断面を移動。
+- **ウィンドウ処理**：Window Level(WL)/Window Width(WW)をスライダーで調整し、コントラストをリアルタイムに変更。
+- **マルチラベルのオーバーレイ比較**：GTと複数の推論ラベルをそれぞれCTに重ね、横並びで同時表示。ラベルIDごとに色を割り当てるため、同一クラスは全パネルで同色になり差分が見やすい。
+- **ラベルのみ表示**：`base`（CT）が無い場合でも、黒背景にラベルだけを描画。
+- **スライス同期**：「スライスを同期」をONにすると、どのパネルを操作しても全パネルが同じ断面に揃う。OFFで個別操作も可能。
+- **ラベル表示のON/OFF**：CT単独表示とオーバーレイ表示を切り替え。ラベル不透明度もスライダーで調整。
+- **キャンバスのリサイズ**：表示キャンバスの右辺・下辺・右下角をドラッグして拡大縮小（ピクセルは補間せず保持）。
+- **ライト / ダークテーマ**：UI全体の配色をトグルで切り替え。
+- **統計ダッシュボード**：数値指標はカード、分布・スコアはグラフ（recharts）で表示。
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 技術スタック
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- React + TypeScript
+- Vite（開発サーバー / ビルド）
+- MUI v9（UIコンポーネント / ライト・ダークテーマ）
+- Recharts（グラフ描画）
+- fflate（ZIP / zlib 解凍）
+- npyjs（NumPy `.npy` 配列のパース）
+
+## ディレクトリ構成
+
+```
+src/
+├── main.tsx              # エントリポイント。createRoot で <App /> を描画する
+├── App.tsx               # ルートコンポーネント。テーマ・ヘッダー・画面切替（d キー）
+├── index.css             # グローバルスタイル（フォント・背景グリッドなど）
+├── theme.ts              # MUIテーマ（ライト/ダーク）とグラフ用CSS変数の定義
+├── config.ts             # 既定のファイルパス（base / gt / fn）を定数 DEFAULT_FILES で公開
+├── api/
+│   └── images.ts         # サーバーへのapiコール、ZIP取得・解凍・キャッシュ
+├── views/                
+│   ├── ViewImage.tsx     # ビューア画面。スライダー・WL/WW・パネル並列表示
+│   └── Dashboard.tsx     # 統計ダッシュボード
+├── components/            
+│   ├── ImageCanvas.tsx   # Canvas描画、ホイール・リサイズ操作
+│   └── LoadDialog.tsx    # 読み込みダイアログ（base / gt / fn のパス入力）
+├── hooks/
+│   └── useImageData.ts   # ボリューム/ラベルの状態管理・スライス切出し・同期ロジック
+└── utils/
+    ├── canvasRenderer.ts # ピクセル値→グレースケール変換とラベルのアルファ合成
+    └── numpyParser.ts    # .npy のパースとボリューム/ラベルボリュームの構築
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## セットアップ
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 前提
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
+- Node.js（推奨 18 以上）
+- 稼働中の [MultiVisualizerServer](https://github.com/study1ng/MultiVisualizerServer)
+
+### インストールと起動
+
+```bash
+npm install
+npm run dev
+```
+
+### 初期設定（既定ファイルパス）
+
+読み込みダイアログを空欄のまま実行したときに使われる既定パスは `src/config.ts` に定義します。`src/config.example.ts`内の`DEFAULT_FILES` の各値を自分の環境のファイルに合わせて書き換えて、名前を`src/config.ts` に変更して下さい。
+
+```ts
+// src/config.example.ts
+// Default file paths used when the load dialog is left entirely empty.
+export const DEFAULT_FILES = {
+  base: "/path/to/your/image.nii.gz", // CTボリューム
+  gt: "/path/to/your/gt.nii.gz",      // 正解ラベル（任意）
+  fn: [                               // 推論結果（複数可・任意）
+    "/path/to/your/out.nii.gz",
+  ],
+};
+```
+
+- ここに指定するのは **サーバー（MultiVisualizerServer）から見たファイルパス** です。ブラウザのローカルパスではありません。
+- `gt` や `fn` を使わない場合は空文字列 `""` や空配列 `[]` にできます。
+- ダイアログで何か入力した場合は、ここの既定値ではなく**入力した値だけ**が使われます（後述）。
+
+### APIプロキシの設定
+
+本アプリは `/api/` へのリクエストでサーバーと通信します。開発サーバーからバックエンドへプロキシするため、`vite.config.ts` に以下のような設定を追加してください（サーバーのホスト・ポートは環境に合わせて変更）。
+
+```ts
+// vite.config.ts
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
       },
-      // other options...
     },
   },
-])
+});
 ```
+
+## 使い方
+
+### 1. 画像を読み込む
+
+1. ビューア画面で **「画像を読み込む」** をクリックし、ダイアログを開きます。
+2. ファイルパスを入力します。
+   - **Base (CT)**：CTボリュームのパス。
+   - **GT (ラベル)**：正解ラベルのパス（任意）。
+   - **Fn (ラベル)**：推論結果のパス。**「Fnを追加」** で入力欄を増やし、**「削除」** で減らせます。複数の推論結果を同時に読み込めます。
+3. **「読み込む」** を押すと、サーバーから取得・解凍したデータがパネルとして横並びで表示されます。
+
+> **既定値の挙動**：3項目（Base / GT / Fn）が **すべて空欄** のときだけ `config.ts` の `DEFAULT_FILES` が使われます。いずれかを入力した場合は、入力したものだけが描画されます（例：Base だけ入力すれば CT 単独表示）。各入力欄のプレースホルダには`src/config.ts` で定義した既定値が薄く表示されます。
+
+### 2. スライスを操作する
+
+- **スライダー**：各パネル下部のスライダーで断面を移動。
+- **マウスホイール**：キャンバス上でホイールを回しても断面を移動できます。
+- **スライスを同期**：ONのとき、どのパネルを操作しても全パネルが同じ断面に揃います。OFFで各パネルを個別操作できます。
+- パネル右上に現在のスライス番号（`現在 / 最大`）が表示されます。
+
+### 3. 表示を調整する（WL / WW・ラベル）
+
+- **Window Level (WL) / Window Width (WW)**：上部のスライダーで明るさ・コントラストを調整します（CTを読み込んだときのみ表示）。
+- **ラベルを表示**：CT単独表示とラベルのオーバーレイ表示を切り替えます。
+- **ラベル不透明度**：オーバーレイの濃さをスライダーで調整します（ラベル表示ONのときのみ有効）。
+
+### 4. キャンバスをリサイズする
+
+キャンバスの **右辺・下辺・右下角** にカーソルを合わせるとリサイズ用のカーソルに変わります。ドラッグして表示サイズを拡大・縮小できます（画素は補間されず、そのまま拡大表示されます）。
+
+### 5. ダッシュボードを見る / テーマを切り替える
+
+- **`d`** キー、またはヘッダーのトグルで統計ダッシュボードに切り替えます。平均・分散・Dice Score・Hausdorff距離・ヒストグラムなどを確認できます（読み込み済みのデータが対象）。
+- ヘッダー右上のトグルで **ライト / ダークテーマ** を切り替えられます。
+
+## データフロー
+
+```
+fetchImages()  ──▶  /api/.../?base=&gt=&fn=...   ──▶  UUID(JSON)
+                                                  └──▶  /api/{uuid}.zip ──▶ 解凍してキャッシュ
+                                                            │
+        ┌───────────────────────────────────────────────────┴───────────────┐
+        ▼                                                                     ▼
+  ViewImage 経路                                                       Dashboard 経路
+  base.bin / *.bin                                                     payload.json
+   └ parseNpy（zlib展開 + npyパース）                                    └ JSON.parse
+   └ buildVolume / buildLabelVolume（向き補正・min/max・ラベルID抽出）    └ カード・グラフへ変換
+   └ スライス切出し ▶ drawSlice（ウィンドウ処理 + ラベル合成）▶ Canvas
+```
+
+リクエスト先のパス（`base` / `gt` / `fn`）は、ダイアログ入力が空のときのみ `config.ts` の `DEFAULT_FILES` が使われます。解凍結果は `api/images.ts` 内にキャッシュされ、`getCachedImages()` を通じてビューアとダッシュボードで共有されます（読み込みのたびに最新の結果で更新されます）。
+
+## 関連リポジトリ
+
+- バックエンド：[study1ng/MultiVisualizerServer](https://github.com/study1ng/MultiVisualizerServer)
