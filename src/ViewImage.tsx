@@ -1,25 +1,25 @@
 import { useState } from "react";
+import {
+	Box, Button, Chip, CircularProgress, FormControlLabel,
+	Paper, Slider, Stack, Switch, Typography,
+} from "@mui/material";
 import ImageCanvas from "./components/ImageCanvas";
 import LoadDialog from "./components/LoadDialog";
 import { useImageData } from "./hooks/useImageData";
-import {
-	Box, Paper, Button, Slider, Typography, Chip,
-	FormControlLabel, Switch, Stack, CircularProgress,
-} from "@mui/material";
 
-// 折り返さない等幅数字スタイル
+// Monospaced, non-wrapping numeric readout.
 const readout = {
 	fontFamily: '"IBM Plex Mono", monospace',
 	fontVariantNumeric: "tabular-nums",
 	whiteSpace: "nowrap" as const,
 } as const;
 
-// WL/WW 用: 桁数が増えても短く収まる表示
+// Compact WL/WW formatting that stays short across magnitudes.
 const fmtVal = (v: number) => {
 	const a = Math.abs(v);
-	if (a !== 0 && (a >= 1e5 || a < 1e-3)) return v.toExponential(2); // 例 1.23e+5
+	if (a !== 0 && (a >= 1e5 || a < 1e-3)) return v.toExponential(2); // e.g. 1.23e+5
 	if (Number.isInteger(v)) return String(v);
-	return v.toFixed(2); // 例 -12.34
+	return v.toFixed(2); // e.g. -12.34
 };
 
 export default function ViewImage() {
@@ -51,14 +51,13 @@ export default function ViewImage() {
 						{loading ? "読み込み中..." : "画像を読み込む"}
 					</Button>
 
+					{/* Window controls only make sense once a base volume exists. */}
 					{volume && (
 						<>
 							<Box sx={{ minWidth: 180, flex: 1 }}>
 								<Stack direction="row" justifyContent="space-between" alignItems="baseline" spacing={1} sx={{ minWidth: 0 }}>
 									<Typography variant="overline" color="text.secondary" noWrap>Window Level</Typography>
-									<Typography variant="body2" sx={readout} color="primary.light">
-										{fmtVal(wl)}
-									</Typography>
+									<Typography variant="body2" sx={readout} color="primary.light">{fmtVal(wl)}</Typography>
 								</Stack>
 								<Slider min={volume.min} max={volume.max} step={step}
 									value={wl} onChange={(_, v) => setWl(v as number)} />
@@ -66,9 +65,7 @@ export default function ViewImage() {
 							<Box sx={{ minWidth: 180, flex: 1 }}>
 								<Stack direction="row" justifyContent="space-between" alignItems="baseline" spacing={1} sx={{ minWidth: 0 }}>
 									<Typography variant="overline" color="text.secondary" noWrap>Window Width</Typography>
-									<Typography variant="body2" sx={readout} color="primary.light">
-										{fmtVal(ww)}
-									</Typography>
+									<Typography variant="body2" sx={readout} color="primary.light">{fmtVal(ww)}</Typography>
 								</Stack>
 								<Slider min={step} max={range} step={step}
 									value={ww} onChange={(_, v) => setWw(v as number)} />
@@ -76,6 +73,7 @@ export default function ViewImage() {
 						</>
 					)}
 
+					{/* Label opacity + toggles, shown whenever any label is present. */}
 					{(volume || hasLabels) && (
 						<>
 							<Box sx={{ minWidth: 180, flex: 1 }}>
@@ -102,6 +100,7 @@ export default function ViewImage() {
 				</Stack>
 			</Paper>
 
+			{/* One panel per label (GT highlighted), each with its own slice slider. */}
 			{panels.length > 0 && width && height && (
 				<Box sx={{ display: "flex", flexWrap: "wrap", gap: 2.5 }}>
 					{panels.map((p, i) => {

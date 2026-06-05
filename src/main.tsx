@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import "./index.css";
-import ViewImage from "./ViewImage.tsx";
-import Dashboard from "./components/Dashboard.tsx";
 import {
-	Box, ThemeProvider, CssBaseline, Typography, Stack,
-	ToggleButton, ToggleButtonGroup,
+	Box, CssBaseline, Stack, ThemeProvider,
+	ToggleButton, ToggleButtonGroup, Typography,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import ViewImage from "./ViewImage.tsx";
+import Dashboard from "./components/Dashboard.tsx";
 import { getTheme, type ThemeMode } from "./theme.ts";
-import "./env.tsx";
+import "./index.css";
+import "./env.tsx"; // sets default file names on globalThis
 
 function RootComponent() {
 	const [showView, setShowView] = useState(true);
@@ -19,12 +19,16 @@ function RootComponent() {
 
 	const theme = useMemo(() => getTheme(mode), [mode]);
 
+	// Persist the chosen color mode.
 	useEffect(() => { localStorage.setItem("ui.mode", mode); }, [mode]);
 
+	// "d" key toggles between the viewer and the dashboard.
 	useEffect(() => {
-		const h = (e: KeyboardEvent) => { if (e.key === "d") setShowView((p) => !p); };
-		window.addEventListener("keydown", h);
-		return () => window.removeEventListener("keydown", h);
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === "d") setShowView((p) => !p);
+		};
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
 	}, []);
 
 	return (
@@ -52,10 +56,7 @@ function RootComponent() {
 				</Stack>
 
 				<Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
-					<ToggleButtonGroup
-						size="small" exclusive value={mode}
-						onChange={(_, v) => v && setMode(v)}
-					>
+					<ToggleButtonGroup size="small" exclusive value={mode} onChange={(_, v) => v && setMode(v)}>
 						<ToggleButton value="light">Light</ToggleButton>
 						<ToggleButton value="dark">Dark</ToggleButton>
 					</ToggleButtonGroup>
@@ -70,6 +71,7 @@ function RootComponent() {
 				</Stack>
 			</Box>
 
+			{/* Keep both views mounted so cached data/state survive switching. */}
 			<Box sx={{ p: { xs: 2, md: 3 } }}>
 				<Box sx={{ display: showView ? "block" : "none" }}>
 					<ViewImage />

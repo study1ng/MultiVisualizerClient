@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
-	Dialog, DialogTitle, DialogContent, DialogActions,
-	TextField, Button, Stack, Typography, Box,
+	Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
+	Stack, TextField, Typography,
 } from "@mui/material";
 
 interface Props {
@@ -16,6 +16,7 @@ export default function LoadDialog({ open, loading, onClose, onSubmit }: Props) 
 	const [gt, setGt] = useState("");
 	const [fnList, setFnList] = useState<string[]>([""]);
 
+	// env.tsx defaults, shown as placeholders.
 	const defBase = globalThis.base_filename ?? "";
 	const defGt = globalThis.gt_filename ?? "";
 	const defFn = globalThis.fn_filenames ?? [];

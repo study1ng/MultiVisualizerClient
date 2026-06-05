@@ -6,36 +6,43 @@ export interface LoadRequest {
 	fn?: string[];
 }
 
-let _unzipped: Unzipped | null = null;
+// Most recently fetched archive; shared between the viewer and the dashboard.
+let _cache: Unzipped | null = null;
 
-// ダッシュボード等が参照する、最後に読み込んだ結果
 export function getCachedImages(): Unzipped | null {
-	return _unzipped;
+	return _cache;
 }
 
+/**
+ * Ask the server to prepare the requested volumes, then download and unzip
+ * the resulting archive. env.tsx defaults are used only when every field is
+ * empty; otherwise just the provided files are rendered.
+ */
 export async function fetchImages(req: LoadRequest): Promise<Unzipped> {
 	const base = (req.base ?? "").trim();
 	const gt = (req.gt ?? "").trim();
 	const fn = (req.fn ?? []).map((f) => f.trim()).filter(Boolean);
 
-	// すべて空欄のときのみデフォルト（env.tsx）を使う
 	const allEmpty = !base && !gt && fn.length === 0;
 	const useBase = allEmpty ? globalThis.base_filename : base;
 	const useGt = allEmpty ? globalThis.gt_filename : gt;
 	const useFn = allEmpty ? globalThis.fn_filenames : fn;
 
-	const view_method = encodeURIComponent("ax=axial,process=normal");
+	const viewMethod = encodeURIComponent("ax=axial,process=normal");
 	const query = new URLSearchParams();
 	if (useBase) query.set("base", useBase);
 	if (useGt) query.set("gt", useGt);
 	for (const f of useFn) query.append("fn", f);
 
-	const url = `/api/${view_method}/?${query.toString()}`;
-	const uuid = await (await fetch(url)).json();
+	// 1) The request returns a UUID identifying the prepared archive.
+	const uuid: string = await (
+		await fetch(`/api/${viewMethod}/?${query.toString()}`)
+	).json();
 
+	// 2) Download and unzip that archive, then cache it.
 	const zipResp = await fetch(`/api/${uuid}.zip`);
 	const bytes = new Uint8Array(await zipResp.arrayBuffer());
 
-	_unzipped = unzipSync(bytes);
-	return _unzipped;
+	_cache = unzipSync(bytes);
+	return _cache;
 }

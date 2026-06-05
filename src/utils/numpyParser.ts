@@ -5,78 +5,81 @@ export interface ParsedNpy {
     data: ArrayBufferView;
     shape: number[];
     dtype: string;
-    fortranOrder: boolean; 
+    fortranOrder: boolean;
 }
 
+/** Read the `fortran_order` flag from a .npy header (supports v1 and v2). */
 function readFortranOrder(buf: Uint8Array): boolean {
     const major = buf[6];
-    let headerStart: number;
-    let headerLen: number;
-    if (major === 1) {
-        headerLen = buf[8] | (buf[9] << 8);            
-        headerStart = 10;
-    } else {
-        headerLen = buf[8] | (buf[9] << 8) | (buf[10] << 16) | (buf[11] << 24); 
-        headerStart = 12;
-    }
+    // v1 stores a 2-byte header length at offset 8; v2 stores a 4-byte one.
+    const headerLen =
+        major === 1
+            ? buf[8] | (buf[9] << 8)
+            : buf[8] | (buf[9] << 8) | (buf[10] << 16) | (buf[11] << 24);
+    const headerStart = major === 1 ? 10 : 12;
     const header = new TextDecoder("latin1").decode(
-        buf.subarray(headerStart, headerStart + headerLen)
+        buf.subarray(headerStart, headerStart + headerLen),
     );
     return /'fortran_order':\s*True/.test(header);
 }
 
+/** Decompress a zlib-wrapped .npy blob and parse it into a typed array. */
 export async function parseNpy(uint8: Uint8Array): Promise<ParsedNpy> {
     const decompressed = unzlibSync(uint8);
     const buffer = decompressed.buffer.slice(
         decompressed.byteOffset,
-        decompressed.byteOffset + decompressed.byteLength
+        decompressed.byteOffset + decompressed.byteLength,
     ) as ArrayBuffer;
 
-    const fortranOrder = readFortranOrder(decompressed); 
-    console.log("fortran_order:", fortranOrder);          
+    const fortranOrder = readFortranOrder(decompressed);
     const npy = new npyjs();
     const result = await npy.load(buffer);
     return { ...result, fortranOrder };
 }
 
+/** Element strides for a 3D array, depending on its memory order. */
+function strides(shape: number[], fortranOrder: boolean) {
+    const [s0, s1, s2] = shape;
+    return fortranOrder
+        ? { st0: 1, st1: s0, st2: s0 * s1 } // column-major
+        : { st0: s1 * s2, st1: s2, st2: 1 }; // row-major
+}
+
+/**
+ * Destination index of a voxel within one slice. Applies a 180deg in-plane
+ * rotation (flip both X and Y) so the volume matches the canvas orientation.
+ */
+function flippedIndex(x: number, y: number, width: number, height: number) {
+    return (height - 1 - y) * width + (width - 1 - x);
+}
+
 export interface Volume {
     data: Float32Array; // [count][height][width]
-    width: number;      // shape[0]
-    height: number;     // shape[1]
-    count: number;      // shape[2]
+    width: number; // shape[0]
+    height: number; // shape[1]
+    count: number; // shape[2]
     min: number;
     max: number;
 }
 
-
-// ロード時に1回だけ呼ぶ：
+/** Build a CT volume (grayscale floats) from a parsed .npy array. */
 export function buildVolume(parsed: ParsedNpy): Volume {
-    const [S0, S1, S2] = parsed.shape;
-    const width = S0, height = S1, count = S2;
-
-    const src = new Float64Array(
-        parsed.data.buffer,
-        parsed.data.byteOffset,
-        parsed.data.byteLength / Float64Array.BYTES_PER_ELEMENT
-    );
-
-    let st0: number, st1: number, st2: number;
-    if (parsed.fortranOrder) {
-        st0 = 1; st1 = S0; st2 = S0 * S1;
-    } else {
-        st2 = 1; st1 = S2; st0 = S1 * S2;
-    }
+    const [width, height, count] = parsed.shape;
+    // Use the typed array directly so any numeric dtype is handled correctly.
+    const src = parsed.data as unknown as ArrayLike<number>;
+    const { st0, st1, st2 } = strides(parsed.shape, parsed.fortranOrder);
 
     const sliceSize = width * height;
     const out = new Float32Array(count * sliceSize);
-    let min = Infinity, max = -Infinity;
+    let min = Infinity;
+    let max = -Infinity;
 
     for (let s = 0; s < count; s++) {
         const base = s * sliceSize;
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 const v = src[x * st0 + y * st1 + s * st2];
-                out[base + (height - 1 - y) * width + (width - 1 - x)] = v;
+                out[base + flippedIndex(x, y, width, height)] = v;
                 if (v < min) min = v;
                 if (v > max) max = v;
             }
@@ -86,26 +89,18 @@ export function buildVolume(parsed: ParsedNpy): Volume {
 }
 
 export interface LabelVolume {
-    data: Int32Array; // [count][height][width] のラベルID
+    data: Int32Array; // [count][height][width] label IDs
     width: number;
     height: number;
     count: number;
-    labels: number[]; // 出現する非ゼロのラベルID(昇順)
+    labels: number[]; // distinct non-zero label IDs, ascending
 }
 
+/** Build a label volume (integer IDs) from a parsed .npy array. */
 export function buildLabelVolume(parsed: ParsedNpy): LabelVolume {
-    const [S0, S1, S2] = parsed.shape;
-    const width = S0, height = S1, count = S2;
-
-    // npyjsが返す型付き配列をそのまま参照(dtypeに応じた正しい型)
+    const [width, height, count] = parsed.shape;
     const src = parsed.data as unknown as ArrayLike<number>;
-
-    let st0: number, st1: number, st2: number;
-    if (parsed.fortranOrder) {
-        st0 = 1; st1 = S0; st2 = S0 * S1;
-    } else {
-        st2 = 1; st1 = S2; st0 = S1 * S2;
-    }
+    const { st0, st1, st2 } = strides(parsed.shape, parsed.fortranOrder);
 
     const sliceSize = width * height;
     const out = new Int32Array(count * sliceSize);
@@ -115,9 +110,8 @@ export function buildLabelVolume(parsed: ParsedNpy): LabelVolume {
         const base = s * sliceSize;
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
-                const v = src[x * st0 + y * st1 + s * st2] | 0; // 整数化
-                // ベースと同じ向き補正
-                out[base + (height - 1 - y) * width + (width - 1 - x)] = v;
+                const v = src[x * st0 + y * st1 + s * st2] | 0; // coerce to int
+                out[base + flippedIndex(x, y, width, height)] = v;
                 if (v !== 0) labelSet.add(v);
             }
         }
@@ -125,7 +119,9 @@ export function buildLabelVolume(parsed: ParsedNpy): LabelVolume {
 
     return {
         data: out,
-        width, height, count,
+        width,
+        height,
+        count,
         labels: [...labelSet].sort((a, b) => a - b),
     };
 }
