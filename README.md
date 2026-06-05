@@ -1,13 +1,13 @@
 # CT Multi-Visualizer (Frontend)
 
 ブラウザ上でCT画像とセグメンテーションラベルを可視化するReactアプリケーションです。
-[MultiVisualizerServer](https://github.com/study1ng/MultiVisualizerServer) から取得した3次元CTデータと複数のラベル（GT・推論結果）を、スライス単位でインタラクティブに描画・比較できます。
+[MultiVisualizerServer](https://github.com/study1ng/MultiVisualizerServer) から取得した3次元CT像と複数のラベル（Ground Truth/推論結果）を、スライス単位でインタラクティブに描画・比較できます。
 
 ## 概要
 
 バックエンドAPIに対象ファイル名を問い合わせると、サーバーがCTボリュームと各種ラベル・統計情報をZIPにまとめて返します。本フロントエンドはそれを解凍・パースし、次の2画面で表示します。
 
-- **ビューア画面**：CTスライスにセグメンテーションラベルを重ねて描画。GT（グランドトゥルース）と複数の推論結果（fn1, fn2, …）を横並びで比較できる。
+- **ビューア画面**：CTスライスにセグメンテーションラベルを重ねて描画。GTと複数の推論結果（fn1, fn2, …）を横並びで比較できる。
 - **ダッシュボード画面**：平均・分散・Dice Score・Hausdorff距離・ヒストグラムなどの統計情報をカードとグラフで表示。
 
 ヘッダー右上のトグルで2画面を切り替えられるほか、キーボードの **`d`** キーでも切り替えられます。同じく右上のトグルで **ライト / ダークテーマ** を切り替えられます（選択はブラウザに保存されます）。
@@ -15,7 +15,7 @@
 ## 主な機能
 
 - **3Dボリュームのスライス表示**：スライダーまたはマウスホイールで断面を移動。
-- **ウィンドウ処理（WL / WW）**：ウィンドウレベル・ウィンドウ幅をスライダーで調整し、コントラストをリアルタイムに変更。
+- **ウィンドウ処理**：Window Level(WL)/Window Width(WW)をスライダーで調整し、コントラストをリアルタイムに変更。
 - **マルチラベルのオーバーレイ比較**：GTと複数の推論ラベルをそれぞれCTに重ね、横並びで同時表示。ラベルIDごとに色を割り当てるため、同一クラスは全パネルで同色になり差分が見やすい。
 - **ラベルのみ表示**：`base`（CT）が無い場合でも、黒背景にラベルだけを描画。
 - **スライス同期**：「スライスを同期」をONにすると、どのパネルを操作しても全パネルが同じ断面に揃う。OFFで個別操作も可能。
@@ -37,17 +37,17 @@
 
 ```
 src/
-├── main.tsx              # エントリポイント。createRoot で <App /> を描画するだけ
+├── main.tsx              # エントリポイント。createRoot で <App /> を描画する
 ├── App.tsx               # ルートコンポーネント。テーマ・ヘッダー・画面切替（d キー）
 ├── index.css             # グローバルスタイル（フォント・背景グリッドなど）
 ├── theme.ts              # MUIテーマ（ライト/ダーク）とグラフ用CSS変数の定義
 ├── config.ts             # 既定のファイルパス（base / gt / fn）を定数 DEFAULT_FILES で公開
 ├── api/
-│   └── images.ts         # サーバーへの問い合わせ、ZIP取得・解凍・キャッシュ
-├── views/                # トップレベル画面
+│   └── images.ts         # サーバーへのapiコール、ZIP取得・解凍・キャッシュ
+├── views/                
 │   ├── ViewImage.tsx     # ビューア画面。スライダー・WL/WW・パネル並列表示
-│   └── Dashboard.tsx     # 統計ダッシュボード（payload.json を描画）
-├── components/           # 再利用される表示部品
+│   └── Dashboard.tsx     # 統計ダッシュボード
+├── components/            
 │   ├── ImageCanvas.tsx   # Canvas描画、ホイール・リサイズ操作
 │   └── LoadDialog.tsx    # 読み込みダイアログ（base / gt / fn のパス入力）
 ├── hooks/
@@ -76,7 +76,7 @@ npm run dev
 読み込みダイアログを空欄のまま実行したときに使われる既定パスは `src/config.ts` に定義します。`src/config.example.ts`内の`DEFAULT_FILES` の各値を自分の環境のファイルに合わせて書き換えて、名前を`src/config.ts` に変更して下さい。
 
 ```ts
-// src/config.ts
+// src/config.example.ts
 // Default file paths used when the load dialog is left entirely empty.
 export const DEFAULT_FILES = {
   base: "/path/to/your/image.nii.gz", // CTボリューム
@@ -121,7 +121,7 @@ export default defineConfig({
    - **Fn (ラベル)**：推論結果のパス。**「Fnを追加」** で入力欄を増やし、**「削除」** で減らせます。複数の推論結果を同時に読み込めます。
 3. **「読み込む」** を押すと、サーバーから取得・解凍したデータがパネルとして横並びで表示されます。
 
-> **既定値の挙動**：3項目（Base / GT / Fn）が **すべて空欄** のときだけ `config.ts` の `DEFAULT_FILES` が使われます。いずれかを入力した場合は、入力したものだけが描画されます（例：Base だけ入力すれば CT 単独表示）。各入力欄のプレースホルダには既定値が薄く表示されます。
+> **既定値の挙動**：3項目（Base / GT / Fn）が **すべて空欄** のときだけ `config.ts` の `DEFAULT_FILES` が使われます。いずれかを入力した場合は、入力したものだけが描画されます（例：Base だけ入力すれば CT 単独表示）。各入力欄のプレースホルダには`src/config.ts` で定義した既定値が薄く表示されます。
 
 ### 2. スライスを操作する
 
