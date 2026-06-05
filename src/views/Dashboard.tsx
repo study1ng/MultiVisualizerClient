@@ -4,7 +4,7 @@ import {
 	Scatter, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { Box, Card, CardContent, Typography } from "@mui/material";
-import { getCachedImages } from "../api/get_3dimg";
+import { getCachedImages } from "../api/image";
 
 // Theme-aware chart colors (the CSS variables are defined by the theme).
 const CHART_FILL = "var(--chart-fill)";
@@ -66,17 +66,17 @@ export default function Dashboard({ active }: { active: boolean }) {
 	}, [active]);
 
 	if (loading) return (
-        <Typography sx={{
-            color: "text.secondary"
-        }}>Loading...</Typography>
-    );
+		<Typography sx={{
+			color: "text.secondary"
+		}}>Loading...</Typography>
+	);
 	if (!payload) {
 		return (
-            <Typography sx={{
-                color: "text.secondary"
-            }}>先にビューアで画像を読み込んでください。
-                            </Typography>
-        );
+			<Typography sx={{
+				color: "text.secondary"
+			}}>先にビューアで画像を読み込んでください。
+			</Typography>
+		);
 	}
 
 	const entries = Object.entries(payload);
@@ -121,11 +121,11 @@ function GraphEntryView({ entry }: { entry: PayloadEntry }) {
 		return <DistributionChart value={entry.value as Record<string, number>} kind={entry.type} />;
 	}
 	return (
-        <Typography sx={{
-            color: "text.secondary"
-        }}>未対応のグラフタイプです: {entry.type}
-        </Typography>
-    );
+		<Typography sx={{
+			color: "text.secondary"
+		}}>未対応のグラフタイプです: {entry.type}
+		</Typography>
+	);
 }
 
 /**
@@ -138,12 +138,12 @@ function DistributionChart({ value, kind }: { value: Record<string, number>; kin
 	const data =
 		kind === "continuous-graph"
 			? raw.filter((item, i) => {
-					if (item.value !== 0) return true; // keep all non-zero points
-					const prev = raw[i - 1];
-					const next = raw[i + 1];
-					if (!prev || !next) return true; // keep endpoints
-					return !(prev.value === 0 && next.value === 0); // drop inner zeros
-			  })
+				if (item.value !== 0) return true; // keep all non-zero points
+				const prev = raw[i - 1];
+				const next = raw[i + 1];
+				if (!prev || !next) return true; // keep endpoints
+				return !(prev.value === 0 && next.value === 0); // drop inner zeros
+			})
 			: raw;
 
 	return (

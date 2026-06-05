@@ -1,4 +1,5 @@
 import { unzipSync, type Unzipped } from "fflate";
+import { DEFAULT_FILES } from "../config";
 
 export interface LoadRequest {
 	base?: string;
@@ -24,9 +25,9 @@ export async function fetchImages(req: LoadRequest): Promise<Unzipped> {
 	const fn = (req.fn ?? []).map((f) => f.trim()).filter(Boolean);
 
 	const allEmpty = !base && !gt && fn.length === 0;
-	const useBase = allEmpty ? globalThis.base_filename : base;
-	const useGt = allEmpty ? globalThis.gt_filename : gt;
-	const useFn = allEmpty ? globalThis.fn_filenames : fn;
+	const useBase = allEmpty ? DEFAULT_FILES.base : base;
+	const useGt = allEmpty ? DEFAULT_FILES.gt : gt;
+	const useFn = allEmpty ? DEFAULT_FILES.fn : fn;
 
 	const viewMethod = encodeURIComponent("ax=axial,process=normal");
 	const query = new URLSearchParams();

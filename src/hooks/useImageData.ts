@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { fetchImages, type LoadRequest } from "../api/get_3dimg";
+import { fetchImages, type LoadRequest } from "../api/image";
 import { buildLabelVolume, buildVolume, parseNpy } from "../utils/numpyParser";
 import type { LabelVolume, Volume } from "../utils/numpyParser";
 

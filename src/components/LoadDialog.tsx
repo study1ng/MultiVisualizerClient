@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DEFAULT_FILES } from "../config";
 import {
 	Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
 	Stack, TextField, Typography,
@@ -17,9 +18,9 @@ export default function LoadDialog({ open, loading, onClose, onSubmit }: Props) 
 	const [fnList, setFnList] = useState<string[]>([""]);
 
 	// env.tsx defaults, shown as placeholders.
-	const defBase = globalThis.base_filename ?? "";
-	const defGt = globalThis.gt_filename ?? "";
-	const defFn = globalThis.fn_filenames ?? [];
+	const defBase = DEFAULT_FILES.base;
+	const defGt = DEFAULT_FILES.gt;
+	const defFn = DEFAULT_FILES.fn;
 
 	const updateFn = (i: number, v: string) =>
 		setFnList((prev) => prev.map((x, idx) => (idx === i ? v : x)));
@@ -28,13 +29,13 @@ export default function LoadDialog({ open, loading, onClose, onSubmit }: Props) 
 		setFnList((prev) => prev.filter((_, idx) => idx !== i));
 
 	return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-            <DialogTitle>画像の読み込み</DialogTitle>
-            <DialogContent dividers>
+		<Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+			<DialogTitle>画像の読み込み</DialogTitle>
+			<DialogContent dividers>
 				<Stack spacing={2.5} sx={{ mt: 1 }}>
 					<Typography variant="body2" sx={{
-                        color: "text.secondary"
-                    }}>
+						color: "text.secondary"
+					}}>
 						すべて空欄の場合はデフォルトパスを使用します。いずれかを入力すると、入力したものだけを描画します。
 					</Typography>
 
@@ -51,13 +52,13 @@ export default function LoadDialog({ open, loading, onClose, onSubmit }: Props) 
 
 					<Box>
 						<Typography variant="overline" sx={{
-                            color: "text.secondary"
-                        }}>Fn (ラベル)</Typography>
+							color: "text.secondary"
+						}}>Fn (ラベル)</Typography>
 						<Stack spacing={1.5} sx={{ mt: 0.5 }}>
 							{fnList.map((v, i) => (
 								<Stack key={i} direction="row" spacing={1} sx={{
-                                    alignItems: "center"
-                                }}>
+									alignItems: "center"
+								}}>
 									<TextField
 										label={`Fn ${i + 1}`} value={v}
 										onChange={(e) => updateFn(i, e.target.value)}
@@ -80,7 +81,7 @@ export default function LoadDialog({ open, loading, onClose, onSubmit }: Props) 
 					</Box>
 				</Stack>
 			</DialogContent>
-            <DialogActions>
+			<DialogActions>
 				<Button onClick={onClose} color="inherit">キャンセル</Button>
 				<Button
 					onClick={() => onSubmit({ base, gt, fn: fnList })}
@@ -89,6 +90,6 @@ export default function LoadDialog({ open, loading, onClose, onSubmit }: Props) 
 					読み込む
 				</Button>
 			</DialogActions>
-        </Dialog>
-    );
+		</Dialog>
+	);
 }

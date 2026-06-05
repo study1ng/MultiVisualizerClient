@@ -1,123 +1,85 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "./assets/vite.svg";
-import heroImg from "./assets/hero.png";
-import "./App.css";
-import "./env.tsx";
+import { useEffect, useMemo, useState } from "react";
+import {
+	Box, CssBaseline, Stack, ThemeProvider,
+	ToggleButton, ToggleButtonGroup, Typography,
+} from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import ViewImage from "./views/ViewImage.tsx";
+import Dashboard from "./views/Dashboard.tsx";
+import { getTheme, type ThemeMode } from "./theme.ts";
 
-function App() {
-	const [count, setCount] = useState(0);
+export default function App() {
+	const [showView, setShowView] = useState(true);
+	const [mode, setMode] = useState<ThemeMode>(
+		() => (localStorage.getItem("ui.mode") as ThemeMode) || "dark",
+	);
+
+	const theme = useMemo(() => getTheme(mode), [mode]);
+
+	// Persist the chosen color mode.
+	useEffect(() => { localStorage.setItem("ui.mode", mode); }, [mode]);
+
+	// "d" key toggles between the viewer and the dashboard.
+	useEffect(() => {
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === "d") setShowView((p) => !p);
+		};
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, []);
 
 	return (
-		<>
-			<section id="center">
-				<div className="hero">
-					<img src={heroImg} className="base" width="170" height="179" alt="" />
-					<img src={reactLogo} className="framework" alt="React logo" />
-					<img src={viteLogo} className="vite" alt="Vite logo" />
-				</div>
-				<div>
-					<h1>Get started</h1>
-					<p>
-						Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-					</p>
-				</div>
-				<button
-					type="button"
-					className="counter"
-					onClick={() => setCount((count) => count + 1)}
-				>
-					Count is {count}
-				</button>
-			</section>
+		<ThemeProvider theme={theme}>
+			<CssBaseline />
+			<Box
+				component="header"
+				sx={{
+					display: "flex", alignItems: "center", justifyContent: "space-between",
+					flexWrap: "wrap", gap: 1.5, px: 3, py: 1.5,
+					borderBottom: "1px solid", borderColor: "divider",
+					position: "sticky", top: 0, zIndex: 10,
+					backdropFilter: "blur(8px)",
+					backgroundColor: (t) => alpha(t.palette.background.default, 0.72),
+				}}
+			>
+				<Stack direction="row" spacing={1.5} sx={{
+					alignItems: "baseline"
+				}}>
+					<Box sx={{
+						width: 8, height: 8, borderRadius: "50%", bgcolor: "primary.main",
+						boxShadow: (t) => `0 0 10px ${t.palette.primary.main}`,
+					}} />
+					<Typography variant="h6" sx={{ fontFamily: '"IBM Plex Mono", monospace' }}>
+						CT&nbsp;Multi-Visualizer
+					</Typography>
+				</Stack>
 
-			<div className="ticks"></div>
+				<Stack direction="row" spacing={1.5} useFlexGap sx={{
+					flexWrap: "wrap"
+				}}>
+					<ToggleButtonGroup size="small" exclusive value={mode} onChange={(_, v) => v && setMode(v)}>
+						<ToggleButton value="light">Light</ToggleButton>
+						<ToggleButton value="dark">Dark</ToggleButton>
+					</ToggleButtonGroup>
 
-			<section id="next-steps">
-				<div id="docs">
-					<svg className="icon" role="presentation" aria-hidden="true">
-						<use href="/icons.svg#documentation-icon"></use>
-					</svg>
-					<h2>Documentation</h2>
-					<p>Your questions, answered</p>
-					<ul>
-						<li>
-							<a href="https://vite.dev/" target="_blank">
-								<img className="logo" src={viteLogo} alt="" />
-								Explore Vite
-							</a>
-						</li>
-						<li>
-							<a href="https://react.dev/" target="_blank">
-								<img className="button-icon" src={reactLogo} alt="" />
-								Learn more
-							</a>
-						</li>
-					</ul>
-				</div>
-				<div id="social">
-					<svg className="icon" role="presentation" aria-hidden="true">
-						<use href="/icons.svg#social-icon"></use>
-					</svg>
-					<h2>Connect with us</h2>
-					<p>Join the Vite community</p>
-					<ul>
-						<li>
-							<a href="https://github.com/vitejs/vite" target="_blank">
-								<svg
-									className="button-icon"
-									role="presentation"
-									aria-hidden="true"
-								>
-									<use href="/icons.svg#github-icon"></use>
-								</svg>
-								GitHub
-							</a>
-						</li>
-						<li>
-							<a href="https://chat.vite.dev/" target="_blank">
-								<svg
-									className="button-icon"
-									role="presentation"
-									aria-hidden="true"
-								>
-									<use href="/icons.svg#discord-icon"></use>
-								</svg>
-								Discord
-							</a>
-						</li>
-						<li>
-							<a href="https://x.com/vite_js" target="_blank">
-								<svg
-									className="button-icon"
-									role="presentation"
-									aria-hidden="true"
-								>
-									<use href="/icons.svg#x-icon"></use>
-								</svg>
-								X.com
-							</a>
-						</li>
-						<li>
-							<a href="https://bsky.app/profile/vite.dev" target="_blank">
-								<svg
-									className="button-icon"
-									role="presentation"
-									aria-hidden="true"
-								>
-									<use href="/icons.svg#bluesky-icon"></use>
-								</svg>
-								Bluesky
-							</a>
-						</li>
-					</ul>
-				</div>
-			</section>
-
-			<div className="ticks"></div>
-			<section id="spacer"></section>
-		</>
+					<ToggleButtonGroup
+						size="small" exclusive value={showView ? "view" : "dash"}
+						onChange={(_, v) => v && setShowView(v === "view")}
+					>
+						<ToggleButton value="view">ビューア</ToggleButton>
+						<ToggleButton value="dash">ダッシュボード</ToggleButton>
+					</ToggleButtonGroup>
+				</Stack>
+			</Box>
+			{/* Keep both views mounted so cached data/state survive switching. */}
+			<Box sx={{ p: { xs: 2, md: 3 } }}>
+				<Box sx={{ display: showView ? "block" : "none" }}>
+					<ViewImage />
+				</Box>
+				<Box sx={{ display: showView ? "none" : "block" }}>
+					<Dashboard active={!showView} />
+				</Box>
+			</Box>
+		</ThemeProvider>
 	);
 }
-
-export default App;
