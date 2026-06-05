@@ -32,9 +32,9 @@ function RootComponent() {
 	}, []);
 
 	return (
-		<ThemeProvider theme={theme}>
-			<CssBaseline />
-			<Box
+        <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <Box
 				component="header"
 				sx={{
 					display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -45,7 +45,9 @@ function RootComponent() {
 					backgroundColor: (t) => alpha(t.palette.background.default, 0.72),
 				}}
 			>
-				<Stack direction="row" alignItems="baseline" spacing={1.5}>
+				<Stack direction="row" spacing={1.5} sx={{
+                    alignItems: "baseline"
+                }}>
 					<Box sx={{
 						width: 8, height: 8, borderRadius: "50%", bgcolor: "primary.main",
 						boxShadow: (t) => `0 0 10px ${t.palette.primary.main}`,
@@ -55,7 +57,9 @@ function RootComponent() {
 					</Typography>
 				</Stack>
 
-				<Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
+				<Stack direction="row" spacing={1.5} useFlexGap sx={{
+                    flexWrap: "wrap"
+                }}>
 					<ToggleButtonGroup size="small" exclusive value={mode} onChange={(_, v) => v && setMode(v)}>
 						<ToggleButton value="light">Light</ToggleButton>
 						<ToggleButton value="dark">Dark</ToggleButton>
@@ -70,9 +74,8 @@ function RootComponent() {
 					</ToggleButtonGroup>
 				</Stack>
 			</Box>
-
-			{/* Keep both views mounted so cached data/state survive switching. */}
-			<Box sx={{ p: { xs: 2, md: 3 } }}>
+            {/* Keep both views mounted so cached data/state survive switching. */}
+            <Box sx={{ p: { xs: 2, md: 3 } }}>
 				<Box sx={{ display: showView ? "block" : "none" }}>
 					<ViewImage />
 				</Box>
@@ -80,8 +83,8 @@ function RootComponent() {
 					<Dashboard active={!showView} />
 				</Box>
 			</Box>
-		</ThemeProvider>
-	);
+        </ThemeProvider>
+    );
 }
 
 createRoot(document.getElementById("root")!).render(<RootComponent />);

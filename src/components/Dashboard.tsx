@@ -65,13 +65,18 @@ export default function Dashboard({ active }: { active: boolean }) {
 		setLoading(false);
 	}, [active]);
 
-	if (loading) return <Typography color="text.secondary">Loading...</Typography>;
+	if (loading) return (
+        <Typography sx={{
+            color: "text.secondary"
+        }}>Loading...</Typography>
+    );
 	if (!payload) {
 		return (
-			<Typography color="text.secondary">
-				先にビューアで画像を読み込んでください。
-			</Typography>
-		);
+            <Typography sx={{
+                color: "text.secondary"
+            }}>先にビューアで画像を読み込んでください。
+                            </Typography>
+        );
 	}
 
 	const entries = Object.entries(payload);
@@ -116,10 +121,11 @@ function GraphEntryView({ entry }: { entry: PayloadEntry }) {
 		return <DistributionChart value={entry.value as Record<string, number>} kind={entry.type} />;
 	}
 	return (
-		<Typography color="text.secondary">
-			未対応のグラフタイプです: {entry.type}
-		</Typography>
-	);
+        <Typography sx={{
+            color: "text.secondary"
+        }}>未対応のグラフタイプです: {entry.type}
+        </Typography>
+    );
 }
 
 /**
@@ -132,12 +138,12 @@ function DistributionChart({ value, kind }: { value: Record<string, number>; kin
 	const data =
 		kind === "continuous-graph"
 			? raw.filter((item, i) => {
-				if (item.value !== 0) return true; // keep all non-zero points
-				const prev = raw[i - 1];
-				const next = raw[i + 1];
-				if (!prev || !next) return true; // keep endpoints
-				return !(prev.value === 0 && next.value === 0); // drop inner zeros
-			})
+					if (item.value !== 0) return true; // keep all non-zero points
+					const prev = raw[i - 1];
+					const next = raw[i + 1];
+					if (!prev || !next) return true; // keep endpoints
+					return !(prev.value === 0 && next.value === 0); // drop inner zeros
+			  })
 			: raw;
 
 	return (
@@ -148,7 +154,8 @@ function DistributionChart({ value, kind }: { value: Record<string, number>; kin
 					<XAxis dataKey="name" tickFormatter={formatScientific} tick={AXIS_TICK} stroke={GRID_STROKE} />
 					<YAxis tickFormatter={formatScientific} tick={AXIS_TICK} stroke={GRID_STROKE} />
 					<Tooltip
-						formatter={(v: number) => formatScientific(v)}
+						// Let Recharts infer the param type (ValueType, not just number).
+						formatter={(value) => formatScientific(value)}
 						contentStyle={TOOLTIP_STYLE}
 						cursor={{ fill: "rgba(255,255,255,0.04)" }}
 					/>

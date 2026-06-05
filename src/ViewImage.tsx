@@ -38,9 +38,11 @@ export default function ViewImage() {
 	const hasLabels = panels.some((p) => p.labelSlice);
 
 	return (
-		<Box>
-			<Paper sx={{ p: 2.5, mb: 3 }}>
-				<Stack direction={{ xs: "column", md: "row" }} spacing={3} alignItems={{ md: "center" }}>
+        <Box>
+            <Paper sx={{ p: 2.5, mb: 3 }}>
+				<Stack direction={{ xs: "column", md: "row" }} spacing={3} sx={{
+                    alignItems: { md: "center" }
+                }}>
 					<Button
 						variant="contained"
 						onClick={() => setDialogOpen(true)}
@@ -55,17 +57,43 @@ export default function ViewImage() {
 					{volume && (
 						<>
 							<Box sx={{ minWidth: 180, flex: 1 }}>
-								<Stack direction="row" justifyContent="space-between" alignItems="baseline" spacing={1} sx={{ minWidth: 0 }}>
-									<Typography variant="overline" color="text.secondary" noWrap>Window Level</Typography>
-									<Typography variant="body2" sx={readout} color="primary.light">{fmtVal(wl)}</Typography>
+								<Stack
+                                    direction="row"
+                                    spacing={1}
+                                    sx={{
+                                        justifyContent: "space-between",
+                                        alignItems: "baseline",
+                                        minWidth: 0
+                                    }}>
+									<Typography variant="overline" noWrap sx={{
+                                        color: "text.secondary"
+                                    }}>Window Level</Typography>
+									<Typography
+                                        variant="body2"
+                                        sx={[{
+                                            color: "primary.light"
+                                        }, ...(Array.isArray(readout) ? readout : [readout])]}>{fmtVal(wl)}</Typography>
 								</Stack>
 								<Slider min={volume.min} max={volume.max} step={step}
 									value={wl} onChange={(_, v) => setWl(v as number)} />
 							</Box>
 							<Box sx={{ minWidth: 180, flex: 1 }}>
-								<Stack direction="row" justifyContent="space-between" alignItems="baseline" spacing={1} sx={{ minWidth: 0 }}>
-									<Typography variant="overline" color="text.secondary" noWrap>Window Width</Typography>
-									<Typography variant="body2" sx={readout} color="primary.light">{fmtVal(ww)}</Typography>
+								<Stack
+                                    direction="row"
+                                    spacing={1}
+                                    sx={{
+                                        justifyContent: "space-between",
+                                        alignItems: "baseline",
+                                        minWidth: 0
+                                    }}>
+									<Typography variant="overline" noWrap sx={{
+                                        color: "text.secondary"
+                                    }}>Window Width</Typography>
+									<Typography
+                                        variant="body2"
+                                        sx={[{
+                                            color: "primary.light"
+                                        }, ...(Array.isArray(readout) ? readout : [readout])]}>{fmtVal(ww)}</Typography>
 								</Stack>
 								<Slider min={step} max={range} step={step}
 									value={ww} onChange={(_, v) => setWw(v as number)} />
@@ -77,9 +105,22 @@ export default function ViewImage() {
 					{(volume || hasLabels) && (
 						<>
 							<Box sx={{ minWidth: 180, flex: 1 }}>
-								<Stack direction="row" justifyContent="space-between" alignItems="baseline" spacing={1} sx={{ minWidth: 0 }}>
-									<Typography variant="overline" color="text.secondary" noWrap>ラベル不透明度</Typography>
-									<Typography variant="body2" sx={readout} color="primary.light">
+								<Stack
+                                    direction="row"
+                                    spacing={1}
+                                    sx={{
+                                        justifyContent: "space-between",
+                                        alignItems: "baseline",
+                                        minWidth: 0
+                                    }}>
+									<Typography variant="overline" noWrap sx={{
+                                        color: "text.secondary"
+                                    }}>ラベル不透明度</Typography>
+									<Typography
+                                        variant="body2"
+                                        sx={[{
+                                            color: "primary.light"
+                                        }, ...(Array.isArray(readout) ? readout : [readout])]}>
 										{Math.round(labelAlpha * 100)}%
 									</Typography>
 								</Stack>
@@ -99,25 +140,33 @@ export default function ViewImage() {
 					)}
 				</Stack>
 			</Paper>
-
-			{/* One panel per label (GT highlighted), each with its own slice slider. */}
-			{panels.length > 0 && width && height && (
+            {/* One panel per label (GT highlighted), each with its own slice slider. */}
+            {panels.length > 0 && width && height && (
 				<Box sx={{ display: "flex", flexWrap: "wrap", gap: 2.5 }}>
 					{panels.map((p, i) => {
 						const isGt = p.name.startsWith("gt");
 						return (
-							<Paper key={p.name} sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1 }}>
-								<Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 0.5 }}>
+                            <Paper key={p.name} sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1 }}>
+                                <Stack
+                                    direction="row"
+                                    sx={{
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        px: 0.5
+                                    }}>
 									<Chip label={p.name} size="small"
 										color={isGt ? "primary" : "default"}
 										variant={isGt ? "filled" : "outlined"}
 										sx={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 500 }} />
-									<Typography variant="body2" sx={readout} color="text.secondary">
+									<Typography
+                                        variant="body2"
+                                        sx={[{
+                                            color: "text.secondary"
+                                        }, ...(Array.isArray(readout) ? readout : [readout])]}>
 										{p.sliceIndex} / {count - 1}
 									</Typography>
 								</Stack>
-
-								<ImageCanvas
+                                <ImageCanvas
 									sliceData={p.baseSlice}
 									labelData={showLabel ? p.labelSlice : null}
 									labelAlpha={labelAlpha}
@@ -127,21 +176,19 @@ export default function ViewImage() {
 									ww={ww}
 									onWheel={(dy) => moveSlice(i, dy)}
 								/>
-
-								<Slider size="small" min={0} max={count - 1}
+                                <Slider size="small" min={0} max={count - 1}
 									value={p.sliceIndex} onChange={(_, v) => setSlice(i, v as number)} />
-							</Paper>
-						);
+                            </Paper>
+                        );
 					})}
 				</Box>
 			)}
-
-			<LoadDialog
+            <LoadDialog
 				open={dialogOpen}
 				loading={loading}
 				onClose={() => setDialogOpen(false)}
 				onSubmit={(req) => { setDialogOpen(false); load(req); }}
 			/>
-		</Box>
-	);
+        </Box>
+    );
 }
