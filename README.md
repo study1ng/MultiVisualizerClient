@@ -73,7 +73,7 @@ npm run dev
 
 ### 初期設定（既定ファイルパス）
 
-読み込みダイアログを空欄のまま実行したときに使われる既定パスは `src/config.ts` に定義されています。自分の環境のファイルに合わせて、`DEFAULT_FILES` の各値を書き換えてください。
+読み込みダイアログを空欄のまま実行したときに使われる既定パスは `src/config.ts` に定義します。`src/config.example.ts`内の`DEFAULT_FILES` の各値を自分の環境のファイルに合わせて書き換えて、名前を`src/config.ts` に変更して下さい。
 
 ```ts
 // src/config.ts
